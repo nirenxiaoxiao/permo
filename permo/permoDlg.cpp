@@ -719,7 +719,7 @@ BOOL CpermoDlg::OnInitDialog()
 	{
 		FileCopyTo(str32, dis, _T("WinRing0.sys"), TRUE);
 	}
-	if (!Initialize(1))
+	if (!::Initialize(1))
 	{
 		AfxMessageBox(_T("文件丢失"));
 	}
@@ -754,7 +754,7 @@ BOOL CpermoDlg::OnInitDialog()
 				FileCopyTo(str32, dis, _T("Packet.dll"), TRUE);
 			}
 		}
-		if (!Initialize(0))
+		if (!::Initialize(0))
 		{
 			AfxMessageBox(_T("文件丢失"));
 		}

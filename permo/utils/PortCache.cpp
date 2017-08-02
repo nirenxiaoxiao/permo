@@ -60,20 +60,27 @@ void PortCache::RebuildTcpTable()
     // Clear the table
 	RtlZeroMemory(_tcpPortTable, sizeof(_tcpPortTable));
 
-    // Rebuild the table
-    MIB_TCPTABLE_OWNER_PID table;
-    table.dwNumEntries = sizeof(table) / sizeof(table.table[0]);
-
-    DWORD tableSize = sizeof(table);
-	if( GetExtendedTcpTable((void *)&table, &tableSize, 
-        FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0)== NO_ERROR )
+//     // Rebuild the table
+//     MIB_TCPTABLE_OWNER_PID table;
+//     table.dwNumEntries = sizeof(table) / sizeof(table.table[0]);
+	DWORD ret = NO_ERROR;
+    DWORD tableSize(0);
+	PMIB_TCPTABLE_OWNER_PID pTcpTable(NULL);
+	if ( GetExtendedTcpTable(pTcpTable, &tableSize, TRUE,AF_INET,TCP_TABLE_OWNER_PID_ALL,0) == ERROR_INSUFFICIENT_BUFFER)
+		pTcpTable = (MIB_TCPTABLE_OWNER_PID *)new char[tableSize];//重新分配缓冲区
+	if( ( ret=GetExtendedTcpTable((void *)pTcpTable, &tableSize, 
+        FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) )== NO_ERROR )
     {
-        for(unsigned int i = 0; i < table.dwNumEntries; i++)
+        for(unsigned int i = 0; i < pTcpTable->dwNumEntries; i++)
         {
-            _tcpPortTable[ntohs((unsigned short)table.table[i].dwLocalPort)] = 
-                table.table[i].dwOwningPid;
+            _tcpPortTable[ntohs((unsigned short)pTcpTable->table[i].dwLocalPort)] = 
+                pTcpTable->table[i].dwOwningPid;
         }
     }
+	if (pTcpTable)
+	{
+		delete []pTcpTable;
+	}
 }
 
 void PortCache::RebuildUdpTable()
@@ -82,18 +89,27 @@ void PortCache::RebuildUdpTable()
 	::RtlZeroMemory(_udpPortTable, sizeof(_udpPortTable));
 
     // Rebuild the table
-    MIB_UDPTABLE_OWNER_PID table;
-    table.dwNumEntries = sizeof(table) / sizeof(table.table[0]);
 
-    DWORD tableSize = sizeof(table);
-
-	if( ::GetExtendedUdpTable((void *)&table, &tableSize, 
-        FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0) == NO_ERROR)
+	PMIB_UDPTABLE_OWNER_PID pBuf = NULL;
+    DWORD tableSize =0;
+	if (::GetExtendedUdpTable(pBuf, &tableSize, 
+		FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0) == ERROR_INSUFFICIENT_BUFFER)
+	{
+		pBuf = (PMIB_UDPTABLE_OWNER_PID )new BYTE[tableSize];
+	}
+	if(::GetExtendedUdpTable(pBuf, &tableSize, 
+		FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0) == NO_ERROR)
     {
-        for(unsigned int i = 0; i < table.dwNumEntries; i++)
+        for(unsigned int i = 0; i < pBuf->dwNumEntries; i++)
         {
-            _udpPortTable[ntohs((unsigned short)table.table[i].dwLocalPort)] = 
-                table.table[i].dwOwningPid;
+            _udpPortTable[ntohs((unsigned short)pBuf->table[i].dwLocalPort)] = 
+                pBuf->table[i].dwOwningPid;
         }
     }
+	if (pBuf)
+	{
+		delete []pBuf;
+		pBuf = NULL;
+	}
+	
 }

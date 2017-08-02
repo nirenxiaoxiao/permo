@@ -29,7 +29,7 @@
 
 #include "stdafx.h"
 #include "TextProgressCtrl.h"
-
+#define CMemDC XCMemDC
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
